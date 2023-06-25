@@ -21,14 +21,16 @@ static inline esp_err_t read_reg(Controller* device, uint8_t reg, uint8_t* data,
     if (device->i2c_semaphore != NULL) xSemaphoreTake(device->i2c_semaphore, portMAX_DELAY);
     esp_err_t res = i2c_write_byte(device->i2c_bus, device->i2c_addr, reg);
     if (res != ESP_OK) {
-        ESP_LOGE(TAG, "write byte error %d", res);
-    } else {
-        vTaskDelay(pdMS_TO_TICKS(10));
-        res = i2c_read_bytes(device->i2c_bus, device->i2c_addr, data, data_len);
-        if (res != ESP_OK) {
-            ESP_LOGE(TAG, "read reg error %d", res);
-        }
+        ESP_LOGD(TAG, "write byte error %d", res);
+        goto err;
     }
+    vTaskDelay(pdMS_TO_TICKS(5));
+    res = i2c_read_bytes(device->i2c_bus, device->i2c_addr, data, data_len);
+    if (res != ESP_OK) {
+        ESP_LOGD(TAG, "read reg error %d", res);
+        goto err;
+    }
+err:
     if (device->i2c_semaphore != NULL) xSemaphoreGive(device->i2c_semaphore);
     return res;
 }
@@ -157,7 +159,7 @@ bool controller_enable(Controller* device) {
         device->initialized = true;
     }
     _read_id(device);
-    xTaskCreate(poll_task, "controller_poll_task", 1024, device, 15, device->poll_task_handle);
+    xTaskCreate(poll_task, "controller_poll_task", 2048, device, 12, device->poll_task_handle);
     return true;
 }
 
