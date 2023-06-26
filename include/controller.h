@@ -29,6 +29,8 @@ __BEGIN_DECLS
 #define CONTROLLER_START 0x0400
 #define CONTROLLER_SELECT 0x1000
 
+typedef void (*leds_next_fn_t)(void);
+
 typedef struct Controller {
     // Pins
     int     i2c_bus;
@@ -36,11 +38,13 @@ typedef struct Controller {
     bool    need_init;
     int     poll_delay; // Number of ms to wait between to polls
     // Internal state
-    bool          initialized;
-    uint16_t      previous_state;
-    QueueHandle_t queue;
+    bool           initialized;
+    uint16_t       previous_state;
+    QueueHandle_t  queue;
+    leds_next_fn_t led_cb;
     // Mutex
     SemaphoreHandle_t i2c_semaphore;
+    SemaphoreHandle_t led_mutex;
     TaskHandle_t      poll_task_handle;
 } Controller;
 

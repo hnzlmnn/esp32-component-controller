@@ -12,7 +12,11 @@
 #include "keyboard.h"
 #include "managed_i2c.h"
 
-#define BUTTON_STATE_CHANGED(DEV, STATE, SEND_FN, BUTTON, KEY) if (((DEV)->previous_state & BUTTON) != (STATE & BUTTON)) SEND_FN(DEV, KEY, (STATE & BUTTON) == BUTTON)
+#define BUTTON_STATE_CHANGED(DEV, STATE, SEND_FN, BUTTON, KEY)                   \
+    if (((DEV)->previous_state & BUTTON) != (STATE & BUTTON)) {                  \
+        SEND_FN(DEV, KEY, (STATE & BUTTON) == BUTTON);                           \
+        if ((STATE & BUTTON) == BUTTON) pressed = true;                          \
+    }
 
 static const char* TAG = "controller";
 
@@ -91,6 +95,8 @@ bool update_buttons(Controller *device) {
 
     uint16_t buttons = ((255 - data[4]) << 8) + (255 - data[5]);
 
+    bool pressed = false;
+
     BUTTON_STATE_CHANGED(device, buttons, send_button_event, CONTROLLER_A,      BUTTON_ACCEPT);
     BUTTON_STATE_CHANGED(device, buttons, send_button_event, CONTROLLER_B,      BUTTON_BACK);
     BUTTON_STATE_CHANGED(device, buttons, send_button_event, CONTROLLER_START,  BUTTON_START);
@@ -99,6 +105,13 @@ bool update_buttons(Controller *device) {
     BUTTON_STATE_CHANGED(device, buttons, send_button_event, CONTROLLER_DOWN,   JOYSTICK_DOWN);
     BUTTON_STATE_CHANGED(device, buttons, send_button_event, CONTROLLER_LEFT,   JOYSTICK_LEFT);
     BUTTON_STATE_CHANGED(device, buttons, send_button_event, CONTROLLER_RIGHT,  JOYSTICK_RIGHT);
+
+    if (pressed) {
+        if (device->led_mutex != NULL) xSemaphoreTake(device->led_mutex, portMAX_DELAY);
+        if (device->led_cb != NULL) device->led_cb();
+        if (device->led_mutex != NULL) xSemaphoreGive(device->led_mutex);
+    }
+
     device->previous_state = buttons;
     return true;
 }
