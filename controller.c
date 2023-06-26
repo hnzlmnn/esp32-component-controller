@@ -182,3 +182,15 @@ bool controller_disable(Controller* device) {
     device->poll_task_handle = NULL;
     return true;
 }
+
+void controller_enable_leds(Controller* device, leds_next_fn_t cb) {
+    if (device->led_mutex != NULL) xSemaphoreTake(device->led_mutex, portMAX_DELAY);
+    device->led_cb = cb;
+    if (device->led_mutex != NULL) xSemaphoreGive(device->led_mutex);
+}
+
+void controller_disable_leds(Controller* device) {
+    if (device->led_mutex != NULL) xSemaphoreTake(device->led_mutex, portMAX_DELAY);
+    device->led_cb = NULL;
+    if (device->led_mutex != NULL) xSemaphoreGive(device->led_mutex);
+}

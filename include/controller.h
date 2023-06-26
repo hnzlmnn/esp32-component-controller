@@ -90,4 +90,7 @@ extern bool controller_enable(Controller* device);
  */
 extern bool controller_disable(Controller* device);
 
+extern void controller_enable_leds(Controller* device, leds_next_fn_t cb);
+extern void controller_disable_leds(Controller* device);
+
 __END_DECLS
